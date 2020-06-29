@@ -51,8 +51,10 @@ class BadSensorsDataset(Dataset):
         time_series = self.signal[sensor_idx]
         start = self.sample_steps * sample_idx
         if self.jiggle_offsets is not None:
-            start += np.random.randint(0, self.jiggle_offsets)
+            if idx - self.sample_steps > start:
+                start += np.random.randint(0, self.jiggle_offsets)
         end = start + self.sample_steps
+        #print(end-start, start, end)
         sample = time_series[start:end]
         return sample
 

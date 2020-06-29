@@ -40,6 +40,18 @@ import itertools
 # ( paper: https://arxiv.org/pdf/2002.12478.pdf )
 
 
+def random_splits(indices, test_size, valid_size):
+    n = len(indices)
+    np.random.shuffle(indices)
+    split = int(np.floor(test_size * n))
+    train_and_valid_idx, test_idx = indices[split:], indices[:split]
+    n_tv = len(train_and_valid_idx)
+    split = int(np.floor(valid_size * n_tv))
+    train_idx, valid_idx = train_and_valid_idx[split:], train_and_valid_idx[:split]
+
+    return train_idx, valid_idx, test_idx
+
+
 def add_mark_missing_column(data):
     zrs = np.zeros((data.shape[0], data.shape[1] + 1))
     zrs[:, :-1] = data
