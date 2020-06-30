@@ -227,6 +227,7 @@ class TimeSeriesCreator:  # for now a Creator, maybe later a real python generat
         self.ts_types = ts_types
         self.ts_type_generators = ts_type_generators
         self.segements = []
+        self.lbls = []
         self._create_ts()
 
     def _create_ts(self):
@@ -237,6 +238,7 @@ class TimeSeriesCreator:  # for now a Creator, maybe later a real python generat
         for s_len in segment_lengths:
             t = rem_last_type(self.ts_types, last_type)
             segment, last_type = create_time_series_segment(s_len, segment_offset, t, self.ts_type_generators)
+            self.lbls += [SignalTypes.TYPES.index(last_type)]*len(segment)
             s_np = np.array(segment)
             segment_offset = s_np[-1,0]
             if segments is None:
@@ -248,6 +250,10 @@ class TimeSeriesCreator:  # for now a Creator, maybe later a real python generat
     @property
     def ts(self):
         return self.segements
+
+    @property
+    def labels(self):
+        return self.lbls
 
 
 class SinusGenerator:
@@ -300,7 +306,7 @@ class Sensor:
         tsc = TimeSeriesCreator(real_ts_length, segment_base_length, ts_types, ts_generators)
         noisy = AugmentTSSignal(tsc.ts).add_noise(self.noise_mu, self.noise_sigma).data
 
-        return tsc.ts, noisy
+        return tsc.ts, noisy, tsc.labels
 
 
 class AugmentTSSignal:

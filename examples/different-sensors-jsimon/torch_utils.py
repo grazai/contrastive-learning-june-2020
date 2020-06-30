@@ -28,12 +28,14 @@ class BadSensorsDataset(Dataset):
         self.jiggle_offsets = jiggle_offsets
 
         self.signal = []
+        self.labels = []
         ts_length_in100Hz = self.ts_length
         for sensor in sensors:
-            signal, signal_w_noise = sensor.sense_signal(ts_length_in100Hz)
+            signal, signal_w_noise, labels = sensor.sense_signal(ts_length_in100Hz)
             signal_100hz = ut.AugmentTSSignal(signal_w_noise).expand(sensor.sampling_rate, 100, sensor.sampling_rate).data
             assert len(signal_100hz) == ts_length_in100Hz
             self.signal.append(signal_100hz)
+            self.labels.append(labels)
 
         self.return_two_transforms = return_two_transforms
         self.transform = transform
@@ -49,6 +51,7 @@ class BadSensorsDataset(Dataset):
         sensor_idx = idx // self.num_samples_per_sensor
         sample_idx = idx % self.num_samples_per_sensor
         time_series = self.signal[sensor_idx]
+        labels = self.labels[sensor_idx]
         start = self.sample_steps * sample_idx
         if self.jiggle_offsets is not None:
             if idx - self.sample_steps > start:
@@ -56,7 +59,8 @@ class BadSensorsDataset(Dataset):
         end = start + self.sample_steps
         #print(end-start, start, end)
         sample = time_series[start:end]
-        return sample
+        label = max(set(labels), key=labels.count)
+        return sample, label
 
     def apply_transforms(self, sample):
         if self.transform:
@@ -77,14 +81,14 @@ class BadSensorsDataset(Dataset):
 
         if isinstance(idx, list):
             samples = [self.get_single_item(i) for i in idx]
-            samples = [self.apply_transforms(s) for s in samples]
+            samples = [(self.apply_transforms(s), l) for (s, l) in samples]
             return samples
 
         # else we assume it is a single index so:
-        sample = self.get_single_item(idx)
+        sample, label = self.get_single_item(idx)
         sample = self.apply_transforms(sample)
 
-        return sample
+        return sample, label
 
 
 class ToTensor(object):
